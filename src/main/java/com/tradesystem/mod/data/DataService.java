@@ -4,6 +4,7 @@ import com.tradesystem.mod.TradeMod;
 import com.tradesystem.mod.network.NetworkHandler;
 import com.tradesystem.mod.network.packet.DataSyncPacket;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.PacketDistributor;
@@ -303,6 +304,74 @@ public class DataService {
             DataSyncPacket packet = new DataSyncPacket(DataSyncPacket.DataType.SYSTEM_STATS, stats);
             NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), packet);
         }
+    }
+    
+    /**
+     * 同步玩家交易历史到客户端
+     */
+    public void syncTransactionHistoryToPlayer(ServerPlayer player) {
+        syncTransactionHistoryToPlayer(player.getUUID(), player);
+    }
+    
+    /**
+     * 同步玩家交易历史到客户端
+     */
+    public void syncTransactionHistoryToPlayer(UUID playerId, ServerPlayer player) {
+        try {
+            TradeMod.getLogger().info("开始同步交易历史到玩家 {}", player.getName().getString());
+            
+            // 从持久化存储获取交易历史
+            List<CompoundTag> allTradeHistory = getPlayerTransactionHistoryFromStorage(playerId);
+            
+            TradeMod.getLogger().info("找到 {} 条与玩家 {} 相关的交易记录", allTradeHistory.size(), player.getName().getString());
+            
+            // 转换为NBT格式并发送
+            CompoundTag historyData = new CompoundTag();
+            ListTag historyList = new ListTag();
+            
+            for (CompoundTag record : allTradeHistory) {
+                historyList.add(record);
+            }
+            
+            historyData.put("history", historyList);
+            historyData.putInt("count", historyList.size());
+            
+            // 发送数据包到客户端
+            DataSyncPacket packet = new DataSyncPacket(DataSyncPacket.DataType.TRADE_HISTORY, historyData);
+            NetworkHandler.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), packet);
+            
+            TradeMod.getLogger().info("已同步 {} 条交易历史记录到玩家 {}", historyList.size(), player.getName().getString());
+            
+        } catch (Exception e) {
+            TradeMod.getLogger().error("同步交易历史到玩家时出错: {}", e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * 从持久化存储获取玩家的交易历史记录
+     */
+    private List<CompoundTag> getPlayerTransactionHistoryFromStorage(UUID playerId) {
+        List<CompoundTag> playerHistory = new ArrayList<>();
+        
+        if (savedData != null) {
+            // 获取所有交易历史
+            List<CompoundTag> allHistory = savedData.getTradeHistory();
+            
+            // 筛选出与该玩家相关的交易记录（作为买家或卖家）
+            for (CompoundTag record : allHistory) {
+                UUID sellerId = record.getUUID("seller_id");
+                UUID buyerId = record.getUUID("buyer_id");
+                
+                if (playerId.equals(sellerId) || playerId.equals(buyerId)) {
+                    playerHistory.add(record);
+                }
+            }
+            
+            // 按时间戳降序排序（最新的在前）
+            playerHistory.sort((a, b) -> Long.compare(b.getLong("timestamp"), a.getLong("timestamp")));
+        }
+        
+        return playerHistory;
     }
     
     // === 维护方法 ===

@@ -13,6 +13,7 @@ import net.minecraft.world.item.ItemStack;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.function.Consumer;
 
 /**
@@ -232,11 +233,35 @@ public class TradeHistoryWidget extends AbstractWidget {
             return "";
         }
         
-        String typeText = switch (transactionRecord.getType()) {
-            case SELL -> "出售给 " + transactionRecord.getBuyerName();
-            case BUY -> "购买自 " + transactionRecord.getSellerName();
-            case RECYCLE -> "系统回收";
-        };
+        // 获取当前玩家UUID
+        UUID currentPlayerId = Minecraft.getInstance().player != null ? 
+                Minecraft.getInstance().player.getUUID() : null;
+        
+        String typeText;
+        if (currentPlayerId != null) {
+            // 根据当前玩家在交易中的角色来显示不同的文本
+            if (currentPlayerId.equals(transactionRecord.getBuyerId())) {
+                // 当前玩家是买家
+                typeText = "购入自 " + transactionRecord.getSellerName();
+            } else if (currentPlayerId.equals(transactionRecord.getSellerId())) {
+                // 当前玩家是卖家
+                typeText = "出售给 " + transactionRecord.getBuyerName();
+            } else {
+                // 其他情况，使用默认显示
+                typeText = switch (transactionRecord.getType()) {
+                    case SELL -> "出售给 " + transactionRecord.getBuyerName();
+                    case BUY -> "购买自 " + transactionRecord.getSellerName();
+                    case RECYCLE -> "系统回收";
+                };
+            }
+        } else {
+            // 无法获取当前玩家信息，使用默认显示
+            typeText = switch (transactionRecord.getType()) {
+                case SELL -> "出售给 " + transactionRecord.getBuyerName();
+                case BUY -> "购买自 " + transactionRecord.getSellerName();
+                case RECYCLE -> "系统回收";
+            };
+        }
         
         return typeText + " - " + transactionRecord.getFormattedTime();
     }

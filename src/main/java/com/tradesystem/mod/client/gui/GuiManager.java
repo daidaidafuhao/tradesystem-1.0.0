@@ -1,5 +1,7 @@
 package com.tradesystem.mod.client.gui;
 
+import com.tradesystem.mod.network.NetworkHandler;
+import com.tradesystem.mod.network.packet.RequestTradeHistorySyncPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.world.entity.player.Player;
@@ -37,6 +39,11 @@ public class GuiManager {
      * 打开我的交易界面
      */
     public static void openMyTradesScreen() {
+        // 请求服务器同步交易历史
+        if (minecraft.player != null) {
+            NetworkHandler.sendToServer(new RequestTradeHistorySyncPacket(minecraft.player.getUUID()));
+        }
+        
         openScreen(new MyTradesScreen());
     }
     

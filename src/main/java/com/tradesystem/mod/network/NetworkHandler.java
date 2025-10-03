@@ -4,6 +4,8 @@ import com.tradesystem.mod.TradeMod;
 import com.tradesystem.mod.network.packet.DataSyncPacket;
 import com.tradesystem.mod.network.packet.OpenTradeGuiPacket;
 import com.tradesystem.mod.network.packet.RequestCurrencySyncPacket;
+import com.tradesystem.mod.network.packet.RequestTradeHistorySyncPacket;
+import com.tradesystem.mod.network.packet.TestPacket;
 import com.tradesystem.mod.network.packet.UnlistItemPacket;
 import com.tradesystem.mod.network.ListItemPacket;
 import com.tradesystem.mod.network.RecycleItemPacket;
@@ -38,13 +40,23 @@ public class NetworkHandler {
     public static void registerPackets() {
         TradeMod.getLogger().info("注册网络包...");
         
-        // 注册数据同步包
+        // 注册数据同步包 - 添加调试信息
+        TradeMod.getLogger().info("注册DataSyncPacket，ID: {}", packetId);
         INSTANCE.registerMessage(nextId(), DataSyncPacket.class, 
                 DataSyncPacket::encode, DataSyncPacket::decode, DataSyncPacket::handle);
+        
+        // 注册测试包
+        TradeMod.getLogger().info("注册TestPacket，ID: {}", packetId);
+        INSTANCE.registerMessage(nextId(), TestPacket.class,
+                TestPacket::encode, TestPacket::decode, TestPacket::handle);
         
         // 注册请求金币同步包
         INSTANCE.registerMessage(nextId(), RequestCurrencySyncPacket.class,
                 RequestCurrencySyncPacket::encode, RequestCurrencySyncPacket::decode, RequestCurrencySyncPacket::handle);
+        
+        // 注册请求交易历史同步包
+        INSTANCE.registerMessage(nextId(), RequestTradeHistorySyncPacket.class,
+                RequestTradeHistorySyncPacket::encode, RequestTradeHistorySyncPacket::decode, RequestTradeHistorySyncPacket::handle);
         
         // 注册打开交易界面包
         INSTANCE.registerMessage(nextId(), OpenTradeGuiPacket.class,
@@ -80,9 +92,10 @@ public class NetworkHandler {
     }
     
     /**
-     * 发送数据包给指定玩家
+     * 发送数据包到玩家
      */
     public static void sendToPlayer(Object packet, ServerPlayer player) {
+        TradeMod.getLogger().info("发送数据包到玩家 {}: {}", player.getName().getString(), packet.getClass().getSimpleName());
         INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), packet);
     }
     

@@ -8,6 +8,7 @@ import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.resources.ResourceLocation;
 
 /**
  * 物品槽位组件
@@ -20,6 +21,8 @@ public class ItemSlotWidget extends AbstractWidget {
     private Runnable onClickCallback;
     private java.util.function.Consumer<ItemSlotWidget> onSlotClickCallback;
     private TradeItem tradeItem;
+
+    private static final ResourceLocation CONTAINER_TEXTURE = new ResourceLocation("textures/gui/container/generic_54.png");
     
     public ItemSlotWidget(int x, int y, ItemStack itemStack) {
         super(x, y, 18, 18, Component.empty());
@@ -95,34 +98,32 @@ public class ItemSlotWidget extends AbstractWidget {
     
     @Override
     public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        // 绘制槽位背景
-        int color = enabled ? (selected ? 0xFF00FF00 : 0xFF8B8B8B) : 0xFF404040;
-        guiGraphics.fill(getX(), getY(), getX() + width, getY() + height, color);
-        
-        // 绘制槽位边框
-        guiGraphics.fill(getX(), getY(), getX() + width, getY() + 1, 0xFF000000);
-        guiGraphics.fill(getX(), getY(), getX() + 1, getY() + height, 0xFF000000);
-        guiGraphics.fill(getX() + width - 1, getY(), getX() + width, getY() + height, 0xFF000000);
-        guiGraphics.fill(getX(), getY() + height - 1, getX() + width, getY() + height, 0xFF000000);
-        
+        // Draw slot background
+        guiGraphics.blit(CONTAINER_TEXTURE, getX(), getY(), 7, 17, width, height);
+
         // 绘制物品
         if (!itemStack.isEmpty()) {
             RenderSystem.enableDepthTest();
             Minecraft minecraft = Minecraft.getInstance();
-            
+
             // 计算物品图标居中位置
             int itemX = getX() + (width - 16) / 2;
             int itemY = getY() + (height - 16) / 2;
-            
+
             // 渲染物品图标
             guiGraphics.renderItem(itemStack, itemX, itemY);
-            
+
             // 渲染物品装饰（数量等）
             guiGraphics.renderItemDecorations(minecraft.font, itemStack, itemX, itemY);
-            
+
             RenderSystem.disableDepthTest();
         }
-        
+
+        // 绘制选中高亮
+        if (selected && enabled) {
+            guiGraphics.fill(getX(), getY(), getX() + width, getY() + height, 0x8000FF00);
+        }
+
         // 绘制悬停效果
         if (isHoveredOrFocused() && enabled) {
             guiGraphics.fill(getX(), getY(), getX() + width, getY() + height, 0x80FFFFFF);

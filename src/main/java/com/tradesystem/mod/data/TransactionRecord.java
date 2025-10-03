@@ -40,7 +40,7 @@ public class TransactionRecord {
         this.sellerName = tag.getString("sellerName");
         this.buyerId = tag.getUUID("buyerId");
         this.buyerName = tag.getString("buyerName");
-        this.itemStack = ItemStack.of(tag.getCompound("itemStack"));
+        this.itemStack = ItemStack.of(tag.getCompound("item"));
         this.price = tag.getInt("price");
         this.timestamp = tag.getLong("timestamp");
         this.type = Type.valueOf(tag.getString("type"));
@@ -53,7 +53,7 @@ public class TransactionRecord {
         tag.putString("sellerName", this.sellerName);
         tag.putUUID("buyerId", this.buyerId);
         tag.putString("buyerName", this.buyerName);
-        tag.put("itemStack", this.itemStack.save(new CompoundTag()));
+        tag.put("item", this.itemStack.save(new CompoundTag()));
         tag.putInt("price", this.price);
         tag.putLong("timestamp", this.timestamp);
         tag.putString("type", this.type.name());

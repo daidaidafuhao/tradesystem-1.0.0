@@ -1,5 +1,6 @@
 package com.tradesystem.mod.client.gui;
 
+import com.tradesystem.mod.TradeMod;
 import com.tradesystem.mod.client.gui.widget.TradeButton;
 import com.tradesystem.mod.client.gui.widget.TradeHistoryWidget;
 import com.tradesystem.mod.data.TradeItem;
@@ -28,85 +29,75 @@ public class MyTradesScreen extends BaseTradeScreen {
     private static final int ITEMS_PER_PAGE = 6;
     
     // 界面组件
-    private Button activeTradesTabButton;
-    private Button historyTabButton;
-    private Button prevPageButton;
-    private Button nextPageButton;
-    private Button backButton;
-    private Button refreshButton;
-    private Button unlistButton;
+    private TradeButton historyTabButton;
+    private TradeButton refreshButton;
+    private TradeButton backButton;
+    private TradeButton prevPageButton;
+    private TradeButton nextPageButton;
     
     // 交易历史组件
-    private final List<TradeHistoryWidget> historyWidgets = new ArrayList<>();
+    private List<TradeHistoryWidget> historyWidgets = new ArrayList<>();
     
     // 数据
-    private List<TradeItem> activeListings = new ArrayList<>();
     private List<TransactionRecord> transactionHistory = new ArrayList<>();
     private int currentPage = 0;
-    private TabType currentTab = TabType.ACTIVE_TRADES;
+    private TabType currentTab = TabType.HISTORY;
     
     // 选中的项目
-    private TradeItem selectedActiveTrade = null;
     private TransactionRecord selectedTransaction = null;
     private TradeHistoryWidget selectedWidget = null;
     
     public MyTradesScreen() {
-        super(Component.translatable("gui.tradesystem.my_trades.title"), 300, 200);
+        super(Component.translatable("gui.tradesystem.my_trades.title"), 300, 240);
+        // 默认显示历史记录标签页
+        this.currentTab = TabType.HISTORY;
     }
     
     @Override
     protected void initComponents() {
-        // 标签页按钮
-        activeTradesTabButton = new TradeButton(leftPos + 10, topPos + 25, 60, 15,
-                Component.translatable("gui.tradesystem.my_trades.active_trades"),
-                button -> switchToActiveTab());
-        addRenderableWidget(activeTradesTabButton);
-        
-        historyTabButton = new TradeButton(leftPos + 80, topPos + 25, 60, 15,
+        // 只保留历史记录标签按钮，移除活跃交易标签
+        historyTabButton = new TradeButton(leftPos + 10, topPos + 25, 80, 15,
                 Component.translatable("gui.tradesystem.my_trades.history"),
                 button -> switchToHistoryTab());
         addRenderableWidget(historyTabButton);
         
         // 刷新按钮
-        refreshButton = new TradeButton(leftPos + 150, topPos + 25, 40, 15,
+        refreshButton = new TradeButton(leftPos + 100, topPos + 25, 40, 15,
                 Component.translatable("gui.tradesystem.sell.refresh"),
                 button -> refreshData());
         addRenderableWidget(refreshButton);
         
-        // 下架按钮
-        unlistButton = new TradeButton(leftPos + 200, topPos + 25, 40, 15,
-                Component.translatable("gui.tradesystem.my_trades.unlist"),
-                button -> unlistSelectedItem());
-        addRenderableWidget(unlistButton);
+        // 移除下架按钮，因为只显示历史记录
         
         // 创建交易历史组件 (紧凑显示)
         historyWidgets.clear();
-        for (int i = 0; i < 6; i++) {
-            int y = topPos + 50 + i * 18;
+        for (int i = 0; i < ITEMS_PER_PAGE; i++) {
+            int y = topPos + 50 + i * 26;
             TradeHistoryWidget widget = new TradeHistoryWidget(
-                    leftPos + 10, y, imageWidth - 20, 16, this::onHistoryWidgetClicked);
+                    leftPos + 10, y, imageWidth - 20, 24, this::onHistoryWidgetClicked);
             historyWidgets.add(widget);
             addRenderableWidget(widget);
         }
         
         // 分页按钮
-        prevPageButton = new TradeButton(leftPos + 10, topPos + 160, 40, 15,
+        prevPageButton = new TradeButton(leftPos + 10, topPos + 210, 40, 15,
                 Component.translatable("gui.tradesystem.my_trades.prev_page"),
                 button -> previousPage());
         addRenderableWidget(prevPageButton);
         
-        nextPageButton = new TradeButton(leftPos + 60, topPos + 160, 40, 15,
+        nextPageButton = new TradeButton(leftPos + 60, topPos + 210, 40, 15,
                 Component.translatable("gui.tradesystem.my_trades.next_page"),
                 button -> nextPage());
         addRenderableWidget(nextPageButton);
         
         // 返回按钮
-        backButton = new TradeButton(leftPos + 200, topPos + 160, 40, 15,
+        backButton = new TradeButton(leftPos + 200, topPos + 210, 40, 15,
                 Component.translatable("gui.tradesystem.button.back"),
                 button -> GuiManager.openTradeMarket());
         addRenderableWidget(backButton);
         
         // 加载数据
+        TradeMod.getLogger().info("MyTradesScreen 初始化完成，开始刷新数据");
         refreshData();
     }
     
@@ -155,94 +146,112 @@ public class MyTradesScreen extends BaseTradeScreen {
         selectedWidget = widget;
         widget.setSelected(true);
         
-        if (currentTab == TabType.ACTIVE_TRADES) {
-            selectedActiveTrade = widget.getTradeItem();
-            selectedTransaction = null;
-        } else {
-            selectedTransaction = widget.getTransactionRecord();
-            selectedActiveTrade = null;
-        }
-    }
-    
-    /**
-     * 切换到活跃交易标签
-     */
-    private void switchToActiveTab() {
-        if (currentTab != TabType.ACTIVE_TRADES) {
-            currentTab = TabType.ACTIVE_TRADES;
-            currentPage = 0;
-            clearSelection();
-            updateDisplay();
-        }
+        selectedTransaction = widget.getTransactionRecord();
     }
     
     /**
      * 切换到历史记录标签
      */
     private void switchToHistoryTab() {
-        if (currentTab != TabType.HISTORY) {
-            currentTab = TabType.HISTORY;
-            currentPage = 0;
-            clearSelection();
-            updateDisplay();
-        }
+        this.currentTab = TabType.HISTORY;
+        updateDisplay();
     }
     
     /**
      * 刷新数据
      */
     private void refreshData() {
+        TradeMod.getLogger().info("refreshData 被调用");
+        
         if (minecraft == null || minecraft.player == null) {
+            TradeMod.getLogger().warn("minecraft 或 player 为 null，无法刷新数据");
             return;
         }
         
         UUID playerId = minecraft.player.getUUID();
+        TradeMod.getLogger().info("发送交易历史同步请求，玩家ID: {}", playerId);
         
-        // 获取玩家的活跃交易
-        activeListings = TradeManager.getInstance().getActiveTradeItems().stream()
-                .filter(item -> item.getSellerId().equals(playerId))
-                .collect(java.util.stream.Collectors.toList());
+        // 请求服务器同步交易历史
+        com.tradesystem.mod.network.packet.RequestTradeHistorySyncPacket packet = 
+            new com.tradesystem.mod.network.packet.RequestTradeHistorySyncPacket(playerId);
+        NetworkHandler.INSTANCE.sendToServer(packet);
         
-        // 获取交易历史（这里应该从服务器获取，暂时使用模拟数据）
-        transactionHistory = getTransactionHistory(playerId);
+        TradeMod.getLogger().info("交易历史同步请求已发送");
         
         updateDisplay();
+    }
+    
+    /**
+     * 更新交易历史数据（由网络包调用）
+     */
+    public void updateTransactionHistory(List<TransactionRecord> newHistory) {
+        TradeMod.getLogger().info("MyTradesScreen.updateTransactionHistory 被调用，接收到 {} 条记录", newHistory.size());
+        
+        this.transactionHistory = new ArrayList<>(newHistory);
+        this.currentPage = 0; // 重置到第一页
+        
+        TradeMod.getLogger().info("交易历史已更新，当前共有 {} 条记录", this.transactionHistory.size());
+        
+        // 刷新显示
+        updateDisplay();
+        
+        TradeMod.getLogger().info("界面显示已刷新");
     }
     
     /**
      * 更新显示
      */
     private void updateDisplay() {
-        List<?> currentData = getCurrentData();
+        TradeMod.getLogger().info("updateDisplay 被调用，当前交易历史记录数: {}", transactionHistory.size());
+        
+        updateHistoryDisplay();
+        
+        // 更新按钮状态
+        historyTabButton.active = true;
+        
+        // 更新分页按钮状态
+        prevPageButton.active = currentPage > 0;
+        nextPageButton.active = (currentPage + 1) * ITEMS_PER_PAGE < transactionHistory.size();
+        
+        TradeMod.getLogger().info("updateDisplay 完成，当前页: {}, 分页按钮状态 - 上一页: {}, 下一页: {}", 
+            currentPage, prevPageButton.active, nextPageButton.active);
+    }
+    
+    /**
+     * 更新历史记录显示
+     */
+    private void updateHistoryDisplay() {
+        TradeMod.getLogger().info("updateHistoryDisplay 被调用，当前页: {}, 每页显示: {}", currentPage, ITEMS_PER_PAGE);
+        
         int startIndex = currentPage * ITEMS_PER_PAGE;
+        
+        TradeMod.getLogger().info("开始索引: {}, 历史记录总数: {}, 历史组件数: {}", 
+            startIndex, transactionHistory.size(), historyWidgets.size());
         
         for (int i = 0; i < historyWidgets.size(); i++) {
             TradeHistoryWidget widget = historyWidgets.get(i);
             int dataIndex = startIndex + i;
             
-            if (dataIndex < currentData.size()) {
-                Object data = currentData.get(dataIndex);
-                
-                if (currentTab == TabType.ACTIVE_TRADES && data instanceof TradeItem tradeItem) {
-                    widget.setTradeItem(tradeItem);
-                    widget.setVisible(true);
-                } else if (currentTab == TabType.HISTORY && data instanceof TransactionRecord record) {
-                    widget.setTransactionRecord(record);
-                    widget.setVisible(true);
-                } else {
-                    widget.setVisible(false);
-                }
+            if (dataIndex < transactionHistory.size()) {
+                TransactionRecord record = transactionHistory.get(dataIndex);
+                TradeMod.getLogger().info("设置组件 {} 显示记录: {} (卖家: {}, 买家: {})", 
+                    i, record.getTransactionId(), record.getSellerName(), record.getBuyerName());
+                widget.setTransactionRecord(record);
+                widget.setVisible(true);
             } else {
+                TradeMod.getLogger().info("隐藏组件 {} (索引 {} 超出范围)", i, dataIndex);
                 widget.setVisible(false);
             }
         }
+        
+        TradeMod.getLogger().info("updateHistoryDisplay 完成");
     }
     
     /**
      * 获取当前标签的数据
      */
     private List<?> getCurrentData() {
-        return currentTab == TabType.ACTIVE_TRADES ? activeListings : transactionHistory;
+        return transactionHistory;
     }
     
     /**
@@ -267,31 +276,7 @@ public class MyTradesScreen extends BaseTradeScreen {
         }
     }
     
-    /**
-     * 下架选中的物品
-     */
-    private void unlistSelectedItem() {
-        if (selectedActiveTrade == null) {
-            if (minecraft != null && minecraft.player != null) {
-                minecraft.player.sendSystemMessage(
-                        Component.translatable("gui.tradesystem.my_trades.no_item_selected"));
-            }
-            return;
-        }
-        
-        // 发送下架请求到服务器
-        NetworkHandler.sendToServer(new com.tradesystem.mod.network.UnlistItemPacket(selectedActiveTrade.getId()));
-        
-        if (minecraft != null && minecraft.player != null) {
-            minecraft.player.sendSystemMessage(
-                    Component.translatable("gui.tradesystem.my_trades.item_unlisted",
-                            selectedActiveTrade.getDisplayName()));
-        }
-        
-        // 刷新数据
-        refreshData();
-        clearSelection();
-    }
+
     
     /**
      * 清除选择
@@ -301,7 +286,6 @@ public class MyTradesScreen extends BaseTradeScreen {
             selectedWidget.setSelected(false);
             selectedWidget = null;
         }
-        selectedActiveTrade = null;
         selectedTransaction = null;
     }
     
@@ -309,12 +293,8 @@ public class MyTradesScreen extends BaseTradeScreen {
      * 渲染标签页指示器
      */
     private void renderTabIndicator(GuiGraphics guiGraphics) {
-        // 高亮当前标签
-        if (currentTab == TabType.ACTIVE_TRADES) {
-            guiGraphics.fill(leftPos + 10, topPos + 45, leftPos + 110, topPos + 47, 0xFF00AA00);
-        } else {
-            guiGraphics.fill(leftPos + 120, topPos + 45, leftPos + 220, topPos + 47, 0xFF00AA00);
-        }
+        // 高亮当前标签（只有历史标签）
+        guiGraphics.fill(leftPos + 120, topPos + 45, leftPos + 220, topPos + 47, 0xFF00AA00);
     }
     
     /**
@@ -336,30 +316,17 @@ public class MyTradesScreen extends BaseTradeScreen {
      * 渲染统计信息
      */
     private void renderStatistics(GuiGraphics guiGraphics) {
-        if (currentTab == TabType.ACTIVE_TRADES) {
-            // 显示活跃交易统计
-            int totalValue = activeListings.stream()
-                    .mapToInt(TradeItem::getPrice)
-                    .sum();
-            
-            Component statsText = Component.translatable("gui.tradesystem.my_trades.active_stats",
-                    activeListings.size(), CurrencyUtil.formatMoney(totalValue));
-            
-            guiGraphics.drawString(this.font, statsText,
-                    leftPos + 150, topPos + 310, 0xAAAAAAA, false);
-        } else {
-            // 显示历史交易统计
-            int totalTransactions = transactionHistory.size();
-            int totalEarnings = transactionHistory.stream()
-                    .mapToInt(TransactionRecord::getPrice)
-                    .sum();
-            
-            Component statsText = Component.translatable("gui.tradesystem.my_trades.history_stats",
-                    totalTransactions, CurrencyUtil.formatMoney(totalEarnings));
-            
-            guiGraphics.drawString(this.font, statsText,
-                    leftPos + 150, topPos + 310, 0xAAAAAAA, false);
-        }
+        // 显示历史交易统计
+        int totalTransactions = transactionHistory.size();
+        int totalEarnings = transactionHistory.stream()
+                .mapToInt(TransactionRecord::getPrice)
+                .sum();
+        
+        Component statsText = Component.translatable("gui.tradesystem.my_trades.history_stats",
+                totalTransactions, CurrencyUtil.formatMoney(totalEarnings));
+        
+        guiGraphics.drawString(this.font, statsText,
+                leftPos + 150, topPos + 310, 0xAAAAAAA, false);
     }
     
     /**
@@ -372,12 +339,7 @@ public class MyTradesScreen extends BaseTradeScreen {
         prevPageButton.active = currentPage > 0;
         nextPageButton.active = currentPage < totalPages - 1;
         
-        // 下架按钮只在活跃交易标签且有选中项目时可用
-        unlistButton.active = currentTab == TabType.ACTIVE_TRADES && selectedActiveTrade != null;
-        unlistButton.visible = currentTab == TabType.ACTIVE_TRADES;
-        
         // 标签按钮状态
-        activeTradesTabButton.active = currentTab != TabType.ACTIVE_TRADES;
         historyTabButton.active = currentTab != TabType.HISTORY;
     }
     
@@ -428,11 +390,7 @@ public class MyTradesScreen extends BaseTradeScreen {
         
         // 处理Tab键切换标签
         if (keyCode == 258) { // Tab key
-            if (currentTab == TabType.ACTIVE_TRADES) {
-                switchToHistoryTab();
-            } else {
-                switchToActiveTab();
-            }
+            switchToHistoryTab();
             return true;
         }
         
@@ -440,10 +398,9 @@ public class MyTradesScreen extends BaseTradeScreen {
     }
     
     /**
-     * 标签类型枚举
+     * 标签页类型枚举
      */
-    public enum TabType {
-        ACTIVE_TRADES,
+    private enum TabType {
         HISTORY
     }
     
@@ -469,7 +426,7 @@ public class MyTradesScreen extends BaseTradeScreen {
             this.sellerName = sellerName;
             this.buyerId = buyerId;
             this.buyerName = buyerName;
-            this.itemStack = itemStack;
+            this.itemStack = itemStack.copy(); // 修复：添加copy()调用
             this.price = price;
             this.timestamp = timestamp;
             this.type = type;
@@ -481,7 +438,7 @@ public class MyTradesScreen extends BaseTradeScreen {
         public String getSellerName() { return sellerName; }
         public UUID getBuyerId() { return buyerId; }
         public String getBuyerName() { return buyerName; }
-        public ItemStack getItemStack() { return itemStack; }
+        public ItemStack getItemStack() { return itemStack.copy(); }
         public int getPrice() { return price; }
         public long getTimestamp() { return timestamp; }
         public Type getType() { return type; }

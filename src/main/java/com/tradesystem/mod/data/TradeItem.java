@@ -29,6 +29,11 @@ public class TradeItem {
         this.price = price;
         this.listTime = System.currentTimeMillis();
         this.active = true;
+        
+        // 调试日志：检查TradeItem创建时的物品数据
+        System.out.println("TradeItem创建 - 物品类型: " + itemStack.getItem().toString() + 
+                          ", 数量: " + itemStack.getCount() + 
+                          ", NBT: " + (itemStack.getTag() != null ? itemStack.getTag().toString() : "null"));
     }
     
     /**
@@ -42,6 +47,11 @@ public class TradeItem {
         this.price = tag.getInt("price");
         this.listTime = tag.getLong("listTime");
         this.active = tag.getBoolean("active");
+        
+        // 调试日志：检查从NBT恢复的物品数据
+        System.out.println("TradeItem从NBT恢复 - 物品类型: " + itemStack.getItem().toString() + 
+                          ", 数量: " + itemStack.getCount() + 
+                          ", NBT: " + (itemStack.getTag() != null ? itemStack.getTag().toString() : "null"));
     }
     
     /**

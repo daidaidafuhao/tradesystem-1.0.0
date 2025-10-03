@@ -1,5 +1,6 @@
 package com.tradesystem.mod.client.gui;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.tradesystem.mod.client.gui.widget.ItemSlotWidget;
 import com.tradesystem.mod.client.gui.widget.TradeButton;
 
@@ -27,7 +28,7 @@ public class SellScreen extends BaseTradeScreen {
     private static final int INVENTORY_SLOTS = 36; // 玩家背包槽位数
 
     private static final int SLOT_SIZE = 18;
-    private static final int SLOT_SPACING = 20;
+    private static final int SLOT_SPACING = 18;
     
     // 界面组件
     private EditBox priceBox;
@@ -144,9 +145,12 @@ public class SellScreen extends BaseTradeScreen {
         renderEstimatedValue(guiGraphics);
         
         // 更新组件可见性
-        updateComponentVisibility();
-        
-        // 渲染模态框
+    updateComponentVisibility();
+}
+    
+    @Override
+    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        super.render(guiGraphics, mouseX, mouseY, partialTick);
         if (showingModal) {
             renderModal(guiGraphics);
         }
@@ -224,7 +228,7 @@ public class SellScreen extends BaseTradeScreen {
             ItemStack itemStack = inventory.getItem(i);
             
             slot.setItemStack(itemStack);
-            slot.setVisible(!itemStack.isEmpty());
+            slot.setVisible(true);
             
             // 在回收模式下，标记不可回收的物品
             if (currentMode == SellMode.RECYCLE && !itemStack.isEmpty()) {
@@ -540,6 +544,11 @@ public class SellScreen extends BaseTradeScreen {
      * 渲染模态框
      */
     private void renderModal(GuiGraphics guiGraphics) {
+        // 通过提升Z轴并禁用深度测试，确保模态框位于最顶层
+        RenderSystem.disableDepthTest();
+        guiGraphics.pose().pushPose();
+        guiGraphics.pose().translate(0, 0, 500);
+
         // 渲染半透明背景
         guiGraphics.fill(0, 0, this.width, this.height, 0x80000000);
         
@@ -569,6 +578,10 @@ public class SellScreen extends BaseTradeScreen {
         int loadingX = modalX + (modalWidth - loadingWidth) / 2;
         int loadingY = modalY + 35;
         guiGraphics.drawString(this.font, loadingComponent, loadingX, loadingY, 0xFFD700);
+
+        // 还原渲染状态
+        guiGraphics.pose().popPose();
+        RenderSystem.enableDepthTest();
     }
     
     @Override

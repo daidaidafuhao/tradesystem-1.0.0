@@ -257,23 +257,74 @@ public class TradeManager {
         return 10;
     }
     
+    /**
+     * 记录交易历史
+     */
     private void recordTransaction(TradeItem tradeItem, ServerPlayer buyer) {
-        recordTransaction(tradeItem, buyer, tradeItem.getItemStack().getCount(), tradeItem.getPrice());
+        recordTransaction(tradeItem, buyer, 1, tradeItem.getPrice());
     }
     
+    /**
+     * 记录交易历史（带数量和总价）
+     */
     private void recordTransaction(TradeItem tradeItem, ServerPlayer buyer, int quantity, int totalPrice) {
+        ItemStack itemStack = tradeItem.getItemStack().copy();
+        
+        // 调试：检查TradeItem的物品数据
+        System.out.println("TradeManager.recordTransaction - 物品类型: " + itemStack.getItem().toString() + 
+                          ", 数量: " + itemStack.getCount() + 
+                          ", NBT: " + (itemStack.getTag() != null ? itemStack.getTag().toString() : "null"));
+        
         TransactionRecord record = new TransactionRecord(
             tradeItem.getSellerId(),
             tradeItem.getSellerName(),
             buyer.getUUID(),
             buyer.getName().getString(),
-            tradeItem.getItemStack(),
+            itemStack,
             totalPrice,
             TransactionRecord.Type.SELL
         );
         
+        // 添加到内存中的交易历史
         addTransactionRecord(tradeItem.getSellerId(), record);
         addTransactionRecord(buyer.getUUID(), record);
+        
+        // 持久化存储交易记录到服务端
+        saveTransactionToServer(record);
+    }
+    
+    /**
+     * 将交易记录保存到服务端持久化存储
+     */
+    private void saveTransactionToServer(TransactionRecord record) {
+        try {
+            // 获取数据服务实例
+            com.tradesystem.mod.data.DataService dataService = com.tradesystem.mod.data.DataService.getInstance();
+            if (dataService != null) {
+                // 将交易记录转换为NBT格式
+                net.minecraft.nbt.CompoundTag recordNBT = new net.minecraft.nbt.CompoundTag();
+                recordNBT.putUUID("transaction_id", record.getTransactionId());
+                recordNBT.putUUID("seller_id", record.getSellerId());
+                recordNBT.putString("seller_name", record.getSellerName());
+                recordNBT.putUUID("buyer_id", record.getBuyerId());
+                recordNBT.putString("buyer_name", record.getBuyerName());
+                recordNBT.put("item", record.getItemStack().save(new net.minecraft.nbt.CompoundTag()));
+                recordNBT.putInt("price", record.getPrice());
+                recordNBT.putLong("timestamp", record.getTimestamp());
+                recordNBT.putString("type", record.getType().name());
+                
+                // 保存到TradeSavedData
+                com.tradesystem.mod.data.TradeSavedData savedData = com.tradesystem.mod.data.TradeSavedData.get(
+                    net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer());
+                if (savedData != null) {
+                    savedData.addTradeHistory(recordNBT);
+                    com.tradesystem.mod.TradeMod.getLogger().info("交易记录已保存到服务端: {} -> {} ({})", 
+                        record.getSellerName(), record.getBuyerName(), record.getItemStack().getDisplayName().getString());
+                }
+            }
+        } catch (Exception e) {
+            com.tradesystem.mod.TradeMod.getLogger().error("保存交易记录到服务端时出错: {}", e.getMessage(), e);
+        }
     }
     
     private void addTransactionRecord(UUID playerId, TransactionRecord record) {
