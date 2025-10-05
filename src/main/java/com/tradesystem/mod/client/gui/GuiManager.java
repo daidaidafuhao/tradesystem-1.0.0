@@ -58,8 +58,14 @@ public class GuiManager {
      * 打开设置界面
      */
     public static void openSettingsScreen() {
-        // TODO: 实现设置界面
-        // openScreen(new SettingsScreen());
+        openScreen(new AdminSettingsScreen());
+    }
+    
+    /**
+     * 打开管理员设置界面
+     */
+    public static void openAdminSettingsScreen() {
+        openScreen(new AdminSettingsScreen());
     }
     
     /**

@@ -46,15 +46,33 @@ public abstract class BaseTradeScreen extends Screen {
     protected void init() {
         super.init();
         
-        // 计算界面居中位置
-        this.leftPos = (this.width - this.imageWidth) / 2;
-        this.topPos = (this.height - this.imageHeight) / 2;
+        // 计算界面居中位置，确保界面不会超出屏幕边界
+        this.leftPos = Math.max(0, (this.width - this.imageWidth) / 2);
+        this.topPos = Math.max(0, (this.height - this.imageHeight) / 2);
+        
+        // 如果界面太大，调整到适合屏幕的大小
+        if (this.imageWidth > this.width - 20) {
+            this.imageWidth = this.width - 20;
+            this.leftPos = 10;
+        }
+        if (this.imageHeight > this.height - 20) {
+            this.imageHeight = this.height - 20;
+            this.topPos = 10;
+        }
         
         // 请求服务端同步最新的金币数据
         NetworkHandler.sendToServer(new RequestCurrencySyncPacket());
         
         // 初始化界面组件
         initComponents();
+    }
+    
+    @Override
+    public void resize(net.minecraft.client.Minecraft minecraft, int width, int height) {
+        // 保存当前状态
+        super.resize(minecraft, width, height);
+        // 重新初始化以适应新的屏幕尺寸
+        this.init();
     }
     
     /**

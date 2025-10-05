@@ -17,6 +17,7 @@ public class TradeItem {
     private int price;
     private long listTime;
     private boolean active;
+    private boolean isSystemItem = false; // 标记是否为系统商品
     
     /**
      * 构造函数
@@ -47,11 +48,24 @@ public class TradeItem {
         this.price = tag.getInt("price");
         this.listTime = tag.getLong("listTime");
         this.active = tag.getBoolean("active");
+        this.isSystemItem = tag.getBoolean("isSystemItem");
         
-        // 调试日志：检查从NBT恢复的物品数据
-        System.out.println("TradeItem从NBT恢复 - 物品类型: " + itemStack.getItem().toString() + 
+        // 调试日志：检查TradeItem从NBT加载时的物品数据
+        System.out.println("TradeItem从NBT加载 - 物品类型: " + itemStack.getItem().toString() + 
                           ", 数量: " + itemStack.getCount() + 
                           ", NBT: " + (itemStack.getTag() != null ? itemStack.getTag().toString() : "null"));
+    }
+    
+    /**
+     * 默认构造函数
+     */
+    public TradeItem() {
+        this.id = UUID.randomUUID();
+        this.itemStack = ItemStack.EMPTY;
+        this.price = 0;
+        this.listTime = System.currentTimeMillis();
+        this.active = true;
+        this.isSystemItem = false;
     }
     
     /**
@@ -81,6 +95,14 @@ public class TradeItem {
     // Setters
     public void setActive(boolean active) { this.active = active; }
     public void setPrice(int price) { this.price = price; }
+    public void setSystemItem(boolean isSystemItem) { this.isSystemItem = isSystemItem; }
+    public void setItemStack(ItemStack itemStack) { this.itemStack = itemStack.copy(); }
+    public void setQuantity(int quantity) { this.itemStack.setCount(quantity); }
+    public void setSellerName(String sellerName) { this.sellerName = sellerName; }
+    public void setSellerId(UUID sellerId) { this.sellerId = sellerId; }
+    
+    // 系统商品相关方法
+    public boolean isSystemItem() { return isSystemItem; }
     
     /**
      * 检查物品是否过期（可配置过期时间）

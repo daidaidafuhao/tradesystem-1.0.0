@@ -149,5 +149,33 @@
   
   "gui.tradesystem.tooltip.price": "价格: %s",
   "gui.tradesystem.tooltip.quantity": "数量: %d",
-  "gui.tradesystem.page_info": "第 %d/%d 页"
+  "gui.tradesystem.page_info": "第 %d/%d 页",
+  
+  "gui.tradesystem.button.admin_settings": "管理员设置",
+  "gui.tradesystem.tooltip.admin_settings": "管理系统商品和交易设置",
+  
+  "gui.tradesystem.admin.title": "管理员设置",
+  "gui.tradesystem.admin.search": "搜索物品",
+  "gui.tradesystem.admin.search_hint": "输入物品名称搜索",
+  "gui.tradesystem.admin.prev_page": "上一页",
+  "gui.tradesystem.admin.next_page": "下一页",
+  "gui.tradesystem.admin.price": "价格",
+  "gui.tradesystem.admin.price_hint": "输入价格",
+  "gui.tradesystem.admin.quantity": "数量",
+  "gui.tradesystem.admin.quantity_hint": "输入数量",
+  "gui.tradesystem.admin.add_item": "添加物品",
+  "gui.tradesystem.admin.remove_item": "移除物品",
+  "gui.tradesystem.admin.update_price": "更新价格",
+  "gui.tradesystem.admin.toggle_status": "切换状态",
+  
+  "gui.tradesystem.admin.error.no_item_selected": "请先选择一个物品",
+  "gui.tradesystem.admin.error.not_system_item": "该物品不是系统商品",
+  "gui.tradesystem.admin.error.invalid_price": "请输入有效的价格",
+  "gui.tradesystem.admin.error.invalid_quantity": "请输入有效的数量",
+  
+  "gui.tradesystem.admin.success.item_added": "物品已添加到系统商店",
+  "gui.tradesystem.admin.success.item_removed": "物品已从系统商店移除",
+  "gui.tradesystem.admin.success.price_updated": "物品价格已更新",
+  "gui.tradesystem.admin.success.item_enabled": "物品已启用",
+  "gui.tradesystem.admin.success.item_disabled": "物品已禁用"
 }

@@ -2,11 +2,14 @@ package com.tradesystem.mod.client.gui;
 
 import com.tradesystem.mod.client.gui.widget.ItemSlotWidget;
 import com.tradesystem.mod.client.gui.widget.TradeButton;
+import com.tradesystem.mod.client.ClientSystemItemManager;
 import com.tradesystem.mod.data.TradeItem;
+import com.tradesystem.mod.data.SystemItem;
 import com.tradesystem.mod.manager.ItemListingManager;
 
 import com.tradesystem.mod.network.NetworkHandler;
 import com.tradesystem.mod.network.PurchaseItemPacket;
+import com.tradesystem.mod.network.packet.PurchaseSystemItemPacket;
 import com.tradesystem.mod.util.CurrencyUtil;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -39,13 +42,15 @@ public class BuyScreen extends BaseTradeScreen {
     
     // 数据
     private List<TradeItem> allItems = new ArrayList<>();
-    private List<TradeItem> filteredItems = new ArrayList<>();
+    private List<SystemItem> systemItems = new ArrayList<>();
+    private List<Object> allDisplayItems = new ArrayList<>(); // 包含TradeItem和SystemItem
+    private List<Object> filteredItems = new ArrayList<>();
     private int currentPage = 0;
     private String currentSearch = "";
     private SortType currentSort = SortType.NEWEST;
     
     // 选中的物品
-    private TradeItem selectedItem = null;
+    private Object selectedItem = null; // 可能是TradeItem或SystemItem
     private ItemSlotWidget selectedSlot = null;
     
     // 模态框状态
@@ -186,7 +191,13 @@ public class BuyScreen extends BaseTradeScreen {
         }
         
         selectedSlot = slot;
-        selectedItem = slot.getTradeItem();
+        
+        // 根据槽位类型设置选中的物品
+        if (slot.isSystemItem()) {
+            selectedItem = slot.getSystemItem();
+        } else {
+            selectedItem = slot.getTradeItem();
+        }
         
         if (selectedSlot != null) {
             selectedSlot.setSelected(true);
@@ -194,11 +205,20 @@ public class BuyScreen extends BaseTradeScreen {
     }
     
     /**
-     * 刷新物品列表
+     * 刷新物品列表（公共方法）
      */
     public void refreshItems() {
-        // 从ItemListingManager获取数据（现在支持客户端缓存）
+        // 从ItemListingManager获取玩家交易物品
         allItems = ItemListingManager.getInstance().getAllActiveListings();
+        
+        // 从ClientSystemItemManager获取系统商品
+        systemItems = ClientSystemItemManager.getInstance().getActiveSystemItems();
+        
+        // 合并所有物品
+        allDisplayItems.clear();
+        allDisplayItems.addAll(allItems);
+        allDisplayItems.addAll(systemItems);
+        
         filterAndSortItems();
         updateItemSlots();
     }
@@ -207,30 +227,80 @@ public class BuyScreen extends BaseTradeScreen {
      * 过滤和排序物品
      */
     private void filterAndSortItems() {
-        filteredItems = allItems.stream()
+        filteredItems = allDisplayItems.stream()
                 .filter(item -> {
                     if (currentSearch.isEmpty()) {
                         return true;
                     }
-                    return item.getDisplayName().toLowerCase().contains(currentSearch) ||
-                           item.getSellerName().toLowerCase().contains(currentSearch);
+                    String displayName = getItemDisplayName(item);
+                    String sellerName = getItemSellerName(item);
+                    return displayName.toLowerCase().contains(currentSearch) ||
+                           sellerName.toLowerCase().contains(currentSearch);
                 })
                 .sorted((a, b) -> {
                     switch (currentSort) {
                         case PRICE_LOW_TO_HIGH:
-                            return Integer.compare(a.getPrice(), b.getPrice());
+                            return Integer.compare(getItemPrice(a), getItemPrice(b));
                         case PRICE_HIGH_TO_LOW:
-                            return Integer.compare(b.getPrice(), a.getPrice());
+                            return Integer.compare(getItemPrice(b), getItemPrice(a));
                         case NAME_A_TO_Z:
-                            return a.getDisplayName().compareToIgnoreCase(b.getDisplayName());
+                            return getItemDisplayName(a).compareToIgnoreCase(getItemDisplayName(b));
                         case NAME_Z_TO_A:
-                            return b.getDisplayName().compareToIgnoreCase(a.getDisplayName());
+                            return getItemDisplayName(b).compareToIgnoreCase(getItemDisplayName(a));
                         case NEWEST:
                         default:
-                            return Long.compare(b.getListTime(), a.getListTime());
+                            return Long.compare(getItemListTime(b), getItemListTime(a));
                     }
                 })
                 .collect(Collectors.toList());
+    }
+    
+    /**
+     * 获取物品显示名称
+     */
+    private String getItemDisplayName(Object item) {
+        if (item instanceof TradeItem) {
+            return ((TradeItem) item).getDisplayName();
+        } else if (item instanceof SystemItem) {
+            return ((SystemItem) item).getItemStack().getHoverName().getString();
+        }
+        return "";
+    }
+    
+    /**
+     * 获取物品卖家名称
+     */
+    private String getItemSellerName(Object item) {
+        if (item instanceof TradeItem) {
+            return ((TradeItem) item).getSellerName();
+        } else if (item instanceof SystemItem) {
+            return "System"; // 系统商品
+        }
+        return "";
+    }
+    
+    /**
+     * 获取物品价格
+     */
+    private int getItemPrice(Object item) {
+        if (item instanceof TradeItem) {
+            return ((TradeItem) item).getPrice();
+        } else if (item instanceof SystemItem) {
+            return ((SystemItem) item).getPrice();
+        }
+        return 0;
+    }
+    
+    /**
+     * 获取物品上架时间
+     */
+    private long getItemListTime(Object item) {
+        if (item instanceof TradeItem) {
+            return ((TradeItem) item).getListTime();
+        } else if (item instanceof SystemItem) {
+            return 0; // 系统商品没有上架时间，设为0
+        }
+        return 0;
     }
     
     /**
@@ -244,11 +314,16 @@ public class BuyScreen extends BaseTradeScreen {
             int itemIndex = startIndex + i;
             
             if (itemIndex < filteredItems.size()) {
-                TradeItem item = filteredItems.get(itemIndex);
-                slot.setTradeItem(item);
+                Object item = filteredItems.get(itemIndex);
+                if (item instanceof TradeItem) {
+                    slot.setTradeItem((TradeItem) item);
+                } else if (item instanceof SystemItem) {
+                    slot.setSystemItem((SystemItem) item);
+                }
                 slot.setVisible(true);
             } else {
                 slot.setTradeItem(null);
+                slot.setSystemItem(null);
                 slot.setVisible(false);
             }
         }
@@ -307,13 +382,24 @@ public class BuyScreen extends BaseTradeScreen {
             return;
         }
         
+        if (selectedItem instanceof TradeItem) {
+            purchaseTradeItem((TradeItem) selectedItem);
+        } else if (selectedItem instanceof SystemItem) {
+            purchaseSystemItem((SystemItem) selectedItem);
+        }
+    }
+    
+    /**
+     * 购买玩家交易物品
+     */
+    private void purchaseTradeItem(TradeItem tradeItem) {
         // 获取商品的全部数量
-        int quantity = selectedItem.getItemStack().getCount();
+        int quantity = tradeItem.getItemStack().getCount();
         
         // 检查玩家是否有足够的金币
         if (minecraft != null && minecraft.player != null) {
             int playerMoney = com.tradesystem.mod.client.ClientCurrencyManager.getInstance().getPlayerMoney();
-            int totalPrice = selectedItem.getPrice() * quantity;
+            int totalPrice = tradeItem.getPrice() * quantity;
             if (playerMoney < totalPrice) {
                 minecraft.player.sendSystemMessage(
                         Component.translatable("gui.tradesystem.buy.insufficient_money",
@@ -323,13 +409,52 @@ public class BuyScreen extends BaseTradeScreen {
         }
         
         // 发送购买请求到服务器（购买全部数量）
-        NetworkHandler.sendToServer(new PurchaseItemPacket(selectedItem.getId(), quantity));
+        NetworkHandler.sendToServer(new PurchaseItemPacket(tradeItem.getId(), quantity));
         
         // 显示模态框
         showModal(Component.translatable("gui.tradesystem.buy.purchasing_all",
-                selectedItem.getDisplayName(), quantity, 
-                CurrencyUtil.formatMoney(selectedItem.getPrice() * quantity)).getString());
+                tradeItem.getDisplayName(), quantity, 
+                CurrencyUtil.formatMoney(tradeItem.getPrice() * quantity)).getString());
         
+        // 清除选择并延迟刷新
+        clearSelectionAndRefresh();
+    }
+    
+    /**
+     * 购买系统商品
+     */
+    private void purchaseSystemItem(SystemItem systemItem) {
+        // 系统商品默认购买1个
+        int quantity = 1;
+        
+        // 检查玩家是否有足够的金币
+        if (minecraft != null && minecraft.player != null) {
+            int playerMoney = com.tradesystem.mod.client.ClientCurrencyManager.getInstance().getPlayerMoney();
+            int totalPrice = systemItem.getPrice() * quantity;
+            if (playerMoney < totalPrice) {
+                minecraft.player.sendSystemMessage(
+                        Component.translatable("gui.tradesystem.buy.insufficient_money",
+                                CurrencyUtil.formatMoney(totalPrice)));
+                return;
+            }
+        }
+        
+        // 发送购买系统商品请求到服务器
+        NetworkHandler.sendToServer(new PurchaseSystemItemPacket(systemItem.getId(), quantity));
+        
+        // 显示模态框
+        showModal(Component.translatable("gui.tradesystem.buy.purchasing_system",
+                systemItem.getItemStack().getHoverName().getString(), quantity, 
+                CurrencyUtil.formatMoney(systemItem.getPrice() * quantity)).getString());
+        
+        // 清除选择并延迟刷新
+        clearSelectionAndRefresh();
+    }
+    
+    /**
+     * 清除选择并延迟刷新
+     */
+    private void clearSelectionAndRefresh() {
         // 清除选择
         selectedItem = null;
         if (selectedSlot != null) {
@@ -371,11 +496,27 @@ public class BuyScreen extends BaseTradeScreen {
      */
     private void renderSelectedItemInfo(GuiGraphics guiGraphics) {
         if (selectedItem != null) {
-            int totalPrice = selectedItem.getPrice() * selectedItem.getItemStack().getCount();
+            String displayName;
+            int price;
+            int quantity;
+            
+            if (selectedItem instanceof TradeItem) {
+                TradeItem tradeItem = (TradeItem) selectedItem;
+                displayName = tradeItem.getDisplayName();
+                price = tradeItem.getPrice();
+                quantity = tradeItem.getItemStack().getCount();
+            } else if (selectedItem instanceof SystemItem) {
+                SystemItem systemItem = (SystemItem) selectedItem;
+                displayName = systemItem.getItemStack().getHoverName().getString();
+                price = systemItem.getPrice();
+                quantity = 1; // 系统商品默认购买1个
+            } else {
+                return;
+            }
+            
+            int totalPrice = price * quantity;
             Component selectedText = Component.translatable("gui.tradesystem.buy.selected_total",
-                    selectedItem.getDisplayName(),
-                    selectedItem.getItemStack().getCount(),
-                    CurrencyUtil.formatMoney(totalPrice));
+                    displayName, quantity, CurrencyUtil.formatMoney(totalPrice));
             
             guiGraphics.drawString(this.font, selectedText,
                     leftPos + 10, topPos + 125, 0xFFFFAA, false);

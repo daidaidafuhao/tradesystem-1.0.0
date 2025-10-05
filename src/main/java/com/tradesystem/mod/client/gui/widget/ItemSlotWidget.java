@@ -2,6 +2,7 @@ package com.tradesystem.mod.client.gui.widget;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.tradesystem.mod.data.TradeItem;
+import com.tradesystem.mod.data.SystemItem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -21,6 +22,8 @@ public class ItemSlotWidget extends AbstractWidget {
     private Runnable onClickCallback;
     private java.util.function.Consumer<ItemSlotWidget> onSlotClickCallback;
     private TradeItem tradeItem;
+    private SystemItem systemItem;
+    private boolean isSystemItem = false;
 
     private static final ResourceLocation CONTAINER_TEXTURE = new ResourceLocation("textures/gui/container/generic_54.png");
     
@@ -98,11 +101,11 @@ public class ItemSlotWidget extends AbstractWidget {
     
     @Override
     public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        // Draw slot background
+        // 绘制槽位背景
         guiGraphics.blit(CONTAINER_TEXTURE, getX(), getY(), 7, 17, width, height);
 
-        // 绘制物品
-        if (!itemStack.isEmpty()) {
+        // 只有当槽位中有物品时才渲染物品
+        if (itemStack != null && !itemStack.isEmpty()) {
             RenderSystem.enableDepthTest();
             Minecraft minecraft = Minecraft.getInstance();
 
@@ -110,16 +113,33 @@ public class ItemSlotWidget extends AbstractWidget {
             int itemX = getX() + (width - 16) / 2;
             int itemY = getY() + (height - 16) / 2;
 
-            // 渲染物品图标
-            guiGraphics.renderItem(itemStack, itemX, itemY);
+            // 确保渲染状态正确
+            RenderSystem.enableBlend();
+            RenderSystem.defaultBlendFunc();
 
-            // 渲染物品装饰（数量等）
-            guiGraphics.renderItemDecorations(minecraft.font, itemStack, itemX, itemY);
+            // 调试信息：检查物品渲染
+            System.out.println("渲染物品: " + itemStack.getItem().toString() + 
+                             ", 显示名: " + itemStack.getHoverName().getString() + 
+                             ", 位置: (" + itemX + ", " + itemY + ")");
 
+            try {
+                // 渲染物品图标
+                guiGraphics.renderItem(itemStack, itemX, itemY);
+
+                // 渲染物品装饰（数量等）
+                guiGraphics.renderItemDecorations(minecraft.font, itemStack, itemX, itemY);
+                
+                System.out.println("物品渲染成功: " + itemStack.getItem().toString());
+            } catch (Exception e) {
+                System.out.println("物品渲染失败: " + itemStack.getItem().toString() + ", 错误: " + e.getMessage());
+                e.printStackTrace();
+            }
+
+            RenderSystem.disableBlend();
             RenderSystem.disableDepthTest();
         }
 
-        // 绘制选中高亮
+        // 绘制选中高亮效果
         if (selected && enabled) {
             guiGraphics.fill(getX(), getY(), getX() + width, getY() + height, 0x8000FF00);
         }
@@ -194,6 +214,8 @@ public class ItemSlotWidget extends AbstractWidget {
 
     public void setTradeItem(TradeItem tradeItem) {
         this.tradeItem = tradeItem;
+        this.systemItem = null;
+        this.isSystemItem = false;
         if (tradeItem != null) {
             this.itemStack = tradeItem.getItemStack();
         } else {
@@ -201,10 +223,32 @@ public class ItemSlotWidget extends AbstractWidget {
         }
     }
 
+    // SystemItem相关方法
+    public SystemItem getSystemItem() {
+        return systemItem;
+    }
+
+    public void setSystemItem(SystemItem systemItem) {
+        this.systemItem = systemItem;
+        this.tradeItem = null;
+        this.isSystemItem = systemItem != null;
+        if (systemItem != null) {
+            this.itemStack = systemItem.getItemStack();
+        }
+        // 当systemItem为null时，不要清空itemStack，保留现有的ItemStack
+    }
+
+    public boolean isSystemItem() {
+        return isSystemItem;
+    }
+
     /**
      * 清空槽位
      */
     public void clear() {
         this.itemStack = ItemStack.EMPTY;
+        this.tradeItem = null;
+        this.systemItem = null;
+        this.isSystemItem = false;
     }
 }

@@ -1,5 +1,6 @@
 package com.tradesystem.mod.client.gui;
 
+import com.tradesystem.mod.client.ClientAdminManager;
 import com.tradesystem.mod.client.gui.widget.TradeButton;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -73,16 +74,21 @@ public class TradeMarketScreen extends BaseTradeScreen {
         );
         this.addRenderableWidget(itemManagementButton);
         
-        // 设置按钮
-        this.settingsButton = new TradeButton(
-                leftPos + (imageWidth - buttonWidth) / 2,
-                startY + buttonSpacing * 4,
-                buttonWidth,
-                buttonHeight,
-                Component.translatable("gui.tradesystem.button.settings"),
-                this::onSettingsButtonPressed
-        );
-        this.addRenderableWidget(settingsButton);
+        // 设置按钮 - 仅对管理员显示
+        ClientAdminManager adminManager = ClientAdminManager.getInstance();
+        adminManager.ensurePermissionChecked(); // 确保权限已检查
+        
+        if (adminManager.hasAdminPermission()) {
+            this.settingsButton = new TradeButton(
+                    leftPos + (imageWidth - buttonWidth) / 2,
+                    startY + buttonSpacing * 4,
+                    buttonWidth,
+                    buttonHeight,
+                    Component.translatable("gui.tradesystem.button.admin_settings"),
+                    this::onSettingsButtonPressed
+            );
+            this.addRenderableWidget(settingsButton);
+        }
     }
     
     @Override
@@ -115,9 +121,9 @@ public class TradeMarketScreen extends BaseTradeScreen {
         } else if (itemManagementButton.isMouseOver(mouseX, mouseY)) {
             guiGraphics.renderTooltip(this.font, 
                     Component.translatable("gui.tradesystem.tooltip.item_management"), mouseX, mouseY);
-        } else if (settingsButton.isMouseOver(mouseX, mouseY)) {
+        } else if (settingsButton != null && settingsButton.isMouseOver(mouseX, mouseY)) {
             guiGraphics.renderTooltip(this.font, 
-                    Component.translatable("gui.tradesystem.tooltip.settings"), mouseX, mouseY);
+                    Component.translatable("gui.tradesystem.tooltip.admin_settings"), mouseX, mouseY);
         }
     }
     
@@ -153,10 +159,6 @@ public class TradeMarketScreen extends BaseTradeScreen {
      * 设置按钮点击事件
      */
     private void onSettingsButtonPressed(Button button) {
-        // TODO: 打开设置界面
-        if (this.minecraft != null) {
-            this.minecraft.player.sendSystemMessage(
-                    Component.translatable("gui.tradesystem.message.settings_clicked"));
-        }
+        GuiManager.openAdminSettingsScreen();
     }
 }

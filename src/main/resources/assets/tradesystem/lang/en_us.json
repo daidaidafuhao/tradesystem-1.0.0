@@ -116,5 +116,33 @@
   "gui.tradesystem.item_management.price_updated": "Price updated successfully",
   "gui.tradesystem.item_management.price_update_failed": "Failed to update price",
   "gui.tradesystem.item_management.unlist_success": "Item unlisted successfully",
-  "gui.tradesystem.item_management.unlist_failed": "Failed to unlist item"
+  "gui.tradesystem.item_management.unlist_failed": "Failed to unlist item",
+  
+  "gui.tradesystem.button.admin_settings": "Admin Settings",
+  "gui.tradesystem.tooltip.admin_settings": "Manage system items and trade settings",
+  
+  "gui.tradesystem.admin.title": "Admin Settings",
+  "gui.tradesystem.admin.search": "Search Items",
+  "gui.tradesystem.admin.search_hint": "Enter item name to search",
+  "gui.tradesystem.admin.prev_page": "Previous",
+  "gui.tradesystem.admin.next_page": "Next",
+  "gui.tradesystem.admin.price": "Price",
+  "gui.tradesystem.admin.price_hint": "Enter price",
+  "gui.tradesystem.admin.quantity": "Quantity",
+  "gui.tradesystem.admin.quantity_hint": "Enter quantity",
+  "gui.tradesystem.admin.add_item": "Add Item",
+  "gui.tradesystem.admin.remove_item": "Remove Item",
+  "gui.tradesystem.admin.update_price": "Update Price",
+  "gui.tradesystem.admin.toggle_status": "Toggle Status",
+  
+  "gui.tradesystem.admin.error.no_item_selected": "Please select an item first",
+  "gui.tradesystem.admin.error.not_system_item": "This item is not a system item",
+  "gui.tradesystem.admin.error.invalid_price": "Please enter a valid price",
+  "gui.tradesystem.admin.error.invalid_quantity": "Please enter a valid quantity",
+  
+  "gui.tradesystem.admin.success.item_added": "Item added to system shop",
+  "gui.tradesystem.admin.success.item_removed": "Item removed from system shop",
+  "gui.tradesystem.admin.success.price_updated": "Item price updated",
+  "gui.tradesystem.admin.success.item_enabled": "Item enabled",
+  "gui.tradesystem.admin.success.item_disabled": "Item disabled"
 }

@@ -7,6 +7,11 @@ import com.tradesystem.mod.network.packet.RequestCurrencySyncPacket;
 import com.tradesystem.mod.network.packet.RequestTradeHistorySyncPacket;
 import com.tradesystem.mod.network.packet.TestPacket;
 import com.tradesystem.mod.network.packet.UnlistItemPacket;
+import com.tradesystem.mod.network.packet.SystemItemActionPacket;
+import com.tradesystem.mod.network.packet.SystemItemSyncPacket;
+import com.tradesystem.mod.network.packet.PurchaseSystemItemPacket;
+import com.tradesystem.mod.network.packet.CheckAdminPermissionPacket;
+import com.tradesystem.mod.network.packet.AdminPermissionResponsePacket;
 import com.tradesystem.mod.network.ListItemPacket;
 import com.tradesystem.mod.network.RecycleItemPacket;
 import com.tradesystem.mod.network.PurchaseItemPacket;
@@ -87,6 +92,26 @@ public class NetworkHandler {
                 com.tradesystem.mod.network.packet.UnlistResponsePacket::encode, 
                 com.tradesystem.mod.network.packet.UnlistResponsePacket::decode, 
                 com.tradesystem.mod.network.packet.UnlistResponsePacket::handle);
+        
+        // 注册系统商品操作包
+        INSTANCE.registerMessage(nextId(), SystemItemActionPacket.class,
+                SystemItemActionPacket::encode, SystemItemActionPacket::decode, SystemItemActionPacket::handle);
+        
+        // 注册系统商品同步包
+        INSTANCE.registerMessage(nextId(), SystemItemSyncPacket.class,
+                SystemItemSyncPacket::encode, SystemItemSyncPacket::decode, SystemItemSyncPacket::handle);
+        
+        // 注册购买系统商品包
+        INSTANCE.registerMessage(nextId(), PurchaseSystemItemPacket.class,
+                PurchaseSystemItemPacket::encode, PurchaseSystemItemPacket::decode, PurchaseSystemItemPacket::handle);
+        
+        // 注册管理员权限检查包
+        INSTANCE.registerMessage(nextId(), CheckAdminPermissionPacket.class,
+                CheckAdminPermissionPacket::toBytes, CheckAdminPermissionPacket::new, CheckAdminPermissionPacket::handle);
+        
+        // 注册管理员权限响应包
+        INSTANCE.registerMessage(nextId(), AdminPermissionResponsePacket.class,
+                AdminPermissionResponsePacket::toBytes, AdminPermissionResponsePacket::new, AdminPermissionResponsePacket::handle);
         
         TradeMod.getLogger().info("网络包注册完成，已注册 {} 个包", packetId);
     }
