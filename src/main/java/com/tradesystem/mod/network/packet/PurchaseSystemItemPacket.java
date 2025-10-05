@@ -2,10 +2,12 @@ package com.tradesystem.mod.network.packet;
 
 import com.tradesystem.mod.TradeMod;
 import com.tradesystem.mod.manager.SystemItemManager;
+import com.tradesystem.mod.network.NetworkHandler;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
+import net.minecraftforge.network.PacketDistributor;
 
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -75,6 +77,12 @@ public class PurchaseSystemItemPacket {
                 player.sendSystemMessage(Component.translatable("gui.tradesystem.message.purchase_success"));
                 TradeMod.getLogger().info("玩家 {} 成功购买系统商品 {} x{}", 
                     player.getName().getString(), packet.itemId, packet.quantity);
+                
+                // 购买成功后，同步系统商品数据到所有客户端
+                SystemItemSyncPacket syncPacket = new SystemItemSyncPacket(manager.getAllSystemItems());
+                NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), syncPacket);
+                TradeMod.getLogger().info("系统商品购买成功，已同步数据到所有客户端");
+                
             } else {
                 player.sendSystemMessage(Component.translatable("gui.tradesystem.message.purchase_failed"));
                 TradeMod.getLogger().warn("玩家 {} 购买系统商品失败 {} x{}", 

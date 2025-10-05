@@ -31,7 +31,6 @@ public class AdminSettingsScreen extends BaseTradeScreen {
     // 界面组件
     private EditBox searchBox;
     private EditBox priceBox;
-    private EditBox quantityBox;
     private Button prevPageButton;
     private Button nextPageButton;
     private Button backButton;
@@ -93,17 +92,11 @@ public class AdminSettingsScreen extends BaseTradeScreen {
                 button -> nextPage());
         addRenderableWidget(nextPageButton);
         
-        // 价格输入框
-        priceBox = new EditBox(this.font, leftPos + 95, topPos + 145, 60, 18,
+        // 价格输入框 (居中显示)
+        priceBox = new EditBox(this.font, leftPos + 130, topPos + 145, 80, 18,
                 Component.translatable("gui.tradesystem.admin.price"));
         priceBox.setHint(Component.translatable("gui.tradesystem.admin.price_hint"));
         addRenderableWidget(priceBox);
-        
-        // 数量输入框
-        quantityBox = new EditBox(this.font, leftPos + 165, topPos + 145, 50, 18,
-                Component.translatable("gui.tradesystem.admin.quantity"));
-        quantityBox.setHint(Component.translatable("gui.tradesystem.admin.quantity_hint"));
-        addRenderableWidget(quantityBox);
         
         // 操作按钮 (重新排列以避免重叠)
         addItemButton = new TradeButton(leftPos + 10, topPos + 170, 50, 18,
@@ -144,12 +137,9 @@ public class AdminSettingsScreen extends BaseTradeScreen {
         // 渲染玩家金币信息
         renderPlayerMoney(guiGraphics);
         
-        // 渲染输入框标签 (调整位置以匹配新布局)
+        // 渲染价格标签 (居中显示)
         Component priceLabel = Component.translatable("gui.tradesystem.admin.price");
-        guiGraphics.drawString(this.font, priceLabel, leftPos + 95, topPos + 135, TEXT_COLOR, false);
-        
-        Component quantityLabel = Component.translatable("gui.tradesystem.admin.quantity");
-        guiGraphics.drawString(this.font, quantityLabel, leftPos + 165, topPos + 135, TEXT_COLOR, false);
+        guiGraphics.drawString(this.font, priceLabel, leftPos + 130, topPos + 135, TEXT_COLOR, false);
         
         // 渲染页面信息 (调整位置避免与按钮重叠)
         if (!filteredItems.isEmpty()) {
@@ -170,7 +160,6 @@ public class AdminSettingsScreen extends BaseTradeScreen {
         super.tick();
         searchBox.tick();
         priceBox.tick();
-        quantityBox.tick();
         updateButtonStates();
     }
     
@@ -238,22 +227,19 @@ public class AdminSettingsScreen extends BaseTradeScreen {
             // 检查该物品是否已经是系统商品
             selectedSystemItem = ClientSystemItemManager.getInstance().getSystemItem(selectedGameItem);
             
-            // 根据物品状态更新价格和数量输入框
+            // 根据物品状态更新价格输入框
             if (selectedSystemItem != null) {
-                // 如果是系统商品，显示当前价格和数量
+                // 如果是系统商品，显示当前价格
                 priceBox.setValue(String.valueOf(selectedSystemItem.getPrice()));
-                quantityBox.setValue(String.valueOf(selectedSystemItem.getQuantity()));
             } else {
-                // 如果不是系统商品，清空价格框，数量默认为1
+                // 如果不是系统商品，清空价格框
                 priceBox.setValue("");
-                quantityBox.setValue("1");
             }
         } else {
             // 点击了空槽位，清空选择
             selectedGameItem = null;
             selectedSystemItem = null;
             priceBox.setValue("");
-            quantityBox.setValue("");
         }
     }
     
@@ -392,15 +378,11 @@ public class AdminSettingsScreen extends BaseTradeScreen {
         
         try {
             int price = Integer.parseInt(priceBox.getValue());
-            int quantity = Integer.parseInt(quantityBox.getValue());
+            // 系统商品默认为无限数量，设置为1作为显示值
+            int quantity = 1;
             
             if (price <= 0) {
                 showMessage(Component.translatable("gui.tradesystem.admin.error.invalid_price"));
-                return;
-            }
-            
-            if (quantity <= 0) {
-                showMessage(Component.translatable("gui.tradesystem.admin.error.invalid_quantity"));
                 return;
             }
             

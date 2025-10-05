@@ -324,7 +324,7 @@ public class SystemItemManager {
             return false;
         }
         
-        TradeMod.getLogger().info("Player {} purchased {} x{} from system for {} coins", 
+        TradeMod.getLogger().info("Player {} purchased {} x{} from system for {} coins (infinite stock)", 
                 player.getName().getString(), systemItem.getDisplayName(), quantity, totalPrice);
         
         return true;
@@ -356,6 +356,9 @@ public class SystemItemManager {
         if (itemStack.hasTag()) {
             key.append("_").append(itemStack.getTag().hashCode());
         }
+        
+        // 添加时间戳确保唯一性
+        key.append("_").append(System.currentTimeMillis());
         
         return key.toString();
     }
@@ -527,6 +530,9 @@ public class SystemItemManager {
         // 同步货币到客户端
         com.tradesystem.mod.util.CurrencyUtil.syncCurrencyToClient(player);
         
+        // 系统商品为无限购买，不减少数量，不改变状态
+        // 注释：保持原有的无限购买设计，quantity字段仅用于显示
+        
         // 给予物品
         ItemStack itemToGive = systemItem.getItemStack().copy();
         itemToGive.setCount(quantity);
@@ -536,7 +542,7 @@ public class SystemItemManager {
             player.drop(itemToGive, false);
         }
         
-        TradeMod.getLogger().info("Player {} purchased {} x{} for {} coins", 
+        TradeMod.getLogger().info("Player {} purchased {} x{} for {} coins (infinite stock)", 
                 player.getName().getString(), systemItem.getDisplayName(), quantity, totalPrice);
         
         return true;
